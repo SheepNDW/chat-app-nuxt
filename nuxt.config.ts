@@ -7,4 +7,12 @@ export default defineNuxtConfig({
   },
   modules: ['@nuxt/ui', '@nuxt/eslint', '@nuxt/test-utils/module'],
   css: ['~/assets/css/main.css'],
+  runtimeConfig: {
+    openaiApiKey: '',
+  },
+  vite: {
+    optimizeDeps: {
+      include: ['debug'],
+    },
+  },
 });
