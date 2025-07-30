@@ -4,6 +4,7 @@ import type { Chat, ChatMessage } from '~/types';
 const { messages, chat } = defineProps<{
   messages: ChatMessage[];
   chat: Chat;
+  typing: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -49,6 +50,8 @@ watch(() => messages, pinToBottom, { deep: true });
               {{ message.content }}
             </div>
           </div>
+
+          <span v-if="typing" class="typing-indicator">&#9611;</span>
         </div>
 
         <div class="message-form-container">
@@ -197,5 +200,11 @@ watch(() => messages, pinToBottom, { deep: true });
 
 .message-input::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
+}
+
+.typing-indicator {
+  display: inline-block;
+  animation: pulse 1s infinite;
+  margin-left: 0.25rem;
 }
 </style>
