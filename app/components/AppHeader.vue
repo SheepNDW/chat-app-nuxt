@@ -1,9 +1,10 @@
 <script setup lang="ts">
 const appConfig = useAppConfig();
 
-const { createChat } = useChats();
-function handleClickChat() {
-  createChat();
+const { createChatAndNavigate } = useChats();
+
+async function handleClickChat() {
+  await createChatAndNavigate();
 }
 </script>
 

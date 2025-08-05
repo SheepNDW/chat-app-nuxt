@@ -1,9 +1,10 @@
 <script setup lang="ts">
 const appConfig = useAppConfig();
 
-const { createChat } = useChats();
-function handleClickChat() {
-  createChat();
+const { createChatAndNavigate } = useChats();
+
+async function handleClickChat() {
+  await createChatAndNavigate();
 }
 </script>
 
@@ -12,6 +13,6 @@ function handleClickChat() {
     <span class="text-2xl font-bold mb-2">
       {{ appConfig.title }}
     </span>
-    <UButton to="/chat" @click="handleClickChat">Start Chat</UButton>
+    <UButton class="mt-2" @click="handleClickChat">Start Chat</UButton>
   </UContainer>
 </template>

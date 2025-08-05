@@ -1,5 +1,15 @@
 <script setup lang="ts">
-const { chat, messages, sendMessage } = useChat();
+import type { Chat } from '~/types';
+
+const route = useRoute();
+
+const { chat: chatFromChats, messages, sendMessage } = useChat(route.params.id as string);
+
+if (!chatFromChats.value) {
+  await navigateTo('/', { replace: true });
+}
+
+const chat = computed(() => chatFromChats.value as Chat);
 
 const typing = ref(false);
 
@@ -11,7 +21,7 @@ const handleSendMessage = async (message: string) => {
 
 const appConfig = useAppConfig();
 const title = computed(() =>
-  chat.value.title ? `${chat.value.title} - ${appConfig.title}` : appConfig.title
+  chat.value?.title ? `${chat.value.title} - ${appConfig.title}` : appConfig.title
 );
 
 useHead({
