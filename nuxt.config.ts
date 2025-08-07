@@ -8,7 +8,7 @@ export default defineNuxtConfig({
   modules: ['@nuxt/ui', '@nuxt/eslint', '@nuxt/test-utils/module', '@nuxtjs/mdc'],
   css: ['~/assets/css/main.css'],
   colorMode: {
-    preference: 'light',
+    preference: 'system',
   },
   runtimeConfig: {
     openaiApiKey: '',
