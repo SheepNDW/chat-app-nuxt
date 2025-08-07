@@ -61,6 +61,10 @@ defineProps<{
   margin: 1.5rem 0;
 }
 
+.dark .markdown-content pre {
+  background-color: var(--ui-bg-muted);
+}
+
 .markdown-content code {
   font-size: 0.875rem;
   background-color: var(--ui-bg-muted);

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ChatMessage } from '~/types';
+import type { ChatMessage } from '~~/layers/chat/app/types';
 import useChat from '../useChat';
 
 // Mock $fetch

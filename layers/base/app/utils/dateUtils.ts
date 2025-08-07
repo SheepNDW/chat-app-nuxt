@@ -1,4 +1,4 @@
-import type { Chat } from '~/types';
+import type { Chat } from '~~/layers/chat/app/types';
 
 /**
  * Checks if a given date is within the last specified number of days from now.
