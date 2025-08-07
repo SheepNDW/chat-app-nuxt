@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ChatMessage } from '~~/layers/chat/app/types';
 import useChat from '../useChat';
 
 // Mock $fetch
@@ -7,6 +6,8 @@ const mockResponse = {
   id: '3',
   role: 'assistant',
   content: 'Mock response from API',
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 const mockFetch = vi.fn(() => {
   return Promise.resolve(mockResponse);
@@ -30,11 +31,15 @@ describe('useChat', () => {
         id: '0',
         role: 'user' as const,
         content: 'Hello',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
       {
         id: '1',
         role: 'assistant' as const,
         content: 'Hi there!',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }
     );
   });
@@ -71,6 +76,8 @@ describe('useChat', () => {
       id: '2',
       role: 'user' as const,
       content: 'New message',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     // Messages should be reactive
@@ -92,6 +99,8 @@ describe('useChat', () => {
       id: initialMessageCount.toString(),
       role: 'user',
       content: testMessage,
+      createdAt: expect.any(Date),
+      updatedAt: expect.any(Date),
     });
 
     // Assistant response should be added
@@ -109,11 +118,15 @@ describe('useChat', () => {
         id: (initialCount + 1).toString(),
         role: 'assistant',
         content: 'Response 1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       })
       .mockResolvedValueOnce({
         id: (initialCount + 3).toString(),
         role: 'assistant',
         content: 'Response 2',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
 
     await sendMessage('First message');
@@ -140,6 +153,8 @@ describe('useChat', () => {
       id: initialMessageCount.toString(),
       role: 'user',
       content: testMessage,
+      createdAt: expect.any(Date),
+      updatedAt: expect.any(Date),
     });
   });
 
@@ -166,6 +181,8 @@ describe('useChat', () => {
         id: initialMessages.length.toString(),
         role: 'user',
         content: newMessage,
+        createdAt: expect.any(Date),
+        updatedAt: expect.any(Date),
       },
     ];
 

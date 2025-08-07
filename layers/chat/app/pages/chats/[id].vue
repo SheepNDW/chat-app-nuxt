@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { Chat } from '~~/layers/chat/app/types';
-
 const route = useRoute();
 
 const { chat: chatFromChats, messages, sendMessage } = useChat(route.params.id as string);
