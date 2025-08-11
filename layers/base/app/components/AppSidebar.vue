@@ -90,12 +90,7 @@ async function handleCreateChat() {
       <div class="flex justify-between items-center mb-2">
         <h2 class="text-sm font-semibold text-(--ui-text-muted)">Projects</h2>
       </div>
-      <UNavigationMenu
-        orientation="vertical"
-        class="w-full mb-4"
-        :items="projectItems"
-        default-open
-      />
+      <UNavigationMenu orientation="vertical" class="w-full mb-4" :items="projectItems" />
       <UButton
         size="sm"
         color="neutral"
@@ -112,48 +107,28 @@ async function handleCreateChat() {
         <div class="flex justify-between items-center mb-2">
           <h2 class="text-sm font-semibold text-(--ui-text-muted)">Today</h2>
         </div>
-        <UNavigationMenu
-          orientation="vertical"
-          :items="todayChats"
-          class="w-full mb-4"
-          default-open
-        />
+        <UNavigationMenu orientation="vertical" :items="todayChats" class="w-full mb-4" />
       </div>
 
       <div v-if="lastWeekChats.length > 0" class="mb-4">
         <div class="flex justify-between items-center mb-2">
           <h2 class="text-sm font-semibold text-(--ui-text-muted)">Last 7 Days</h2>
         </div>
-        <UNavigationMenu
-          orientation="vertical"
-          class="w-full mb-4"
-          :items="lastWeekChats"
-          default-open
-        />
+        <UNavigationMenu orientation="vertical" class="w-full mb-4" :items="lastWeekChats" />
       </div>
 
       <div v-if="lastMonthChats.length > 0" class="mb-4">
         <div class="flex justify-between items-center mb-2">
           <h2 class="text-sm font-semibold text-(--ui-text-muted)">Last 30 Days</h2>
         </div>
-        <UNavigationMenu
-          orientation="vertical"
-          class="w-full mb-4"
-          :items="lastMonthChats"
-          default-open
-        />
+        <UNavigationMenu orientation="vertical" class="w-full mb-4" :items="lastMonthChats" />
       </div>
 
       <div v-if="olderChats.length > 0" class="mb-4">
         <div class="flex justify-between items-center mb-2">
           <h2 class="text-sm font-semibold text-(--ui-text-muted)">Older</h2>
         </div>
-        <UNavigationMenu
-          orientation="vertical"
-          class="w-full mb-4"
-          :items="olderChats"
-          default-open
-        />
+        <UNavigationMenu orientation="vertical" class="w-full mb-4" :items="olderChats" />
       </div>
     </div>
 
