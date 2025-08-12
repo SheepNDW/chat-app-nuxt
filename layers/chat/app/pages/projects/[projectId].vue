@@ -110,6 +110,8 @@ async function handleNewChat() {
 
 <style scoped>
 .container {
+  display: flex;
+  flex-direction: column;
   padding: 1rem;
   height: calc(100% - 4rem); /* Account for AppHeader */
 }
