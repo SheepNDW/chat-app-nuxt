@@ -1,200 +1,276 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import useChat from '../useChat';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mockNuxtImport } from '@nuxt/test-utils/runtime';
+import { ref } from 'vue';
 
-// Mock $fetch
-const mockResponse = {
-  id: '3',
-  role: 'assistant',
-  content: 'Mock response from API',
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
-const mockFetch = vi.fn(() => {
-  return Promise.resolve(mockResponse);
+const { useChatsMock } = vi.hoisted(() => {
+  return {
+    useChatsMock: vi.fn(() => {
+      return {
+        chats: ref<Chat[]>([]),
+      };
+    }),
+  };
 });
-vi.stubGlobal('$fetch', mockFetch);
+
+mockNuxtImport('useChats', () => {
+  return useChatsMock;
+});
+
+const { useFetchMock } = vi.hoisted(() => {
+  return {
+    useFetchMock: vi.fn(() => {
+      return {
+        data: ref<ChatMessage[]>([]),
+        execute: vi.fn(async () => Promise.resolve()),
+        status: ref('idle'),
+      };
+    }),
+  };
+});
+
+mockNuxtImport('useFetch', () => {
+  return useFetchMock;
+});
+
+const mockFetch = vi.spyOn(global, '$fetch');
 
 describe('useChat', () => {
-  let testChatId: string;
+  const testId = 'test-uuid';
 
   beforeEach(() => {
-    mockFetch.mockClear();
-
-    // Create a test chat using useChats
-    const { createChat } = useChats();
-    const testChat = createChat();
-    testChatId = testChat.id;
-
-    // Add initial messages to the test chat
-    (testChat.messages as ChatMessage[]).push(
-      {
-        id: '0',
-        role: 'user' as const,
-        content: 'Hello',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: '1',
-        role: 'assistant' as const,
-        content: 'Hi there!',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-    );
-  });
-
-  afterEach(() => {
     vi.clearAllMocks();
+
+    useChatsMock.mockImplementation(() => ({
+      chats: ref([
+        {
+          id: testId,
+          title: 'Nuxt.js project help',
+          messages: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]),
+    }));
+
+    useFetchMock.mockImplementation(() => {
+      return {
+        data: ref<ChatMessage[]>([
+          {
+            id: 'test-id2',
+            content: 'Hello, can you help me with my Nuxt.js project?',
+            role: 'user',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: 'test-id3',
+            content:
+              "Of course! I'd be happy to help with your Nuxt.js project. What specific questions or issues do you have?",
+            role: 'assistant',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ]),
+        execute: vi.fn(async () => Promise.resolve()),
+        status: ref('idle'),
+      };
+    });
   });
 
-  it('should initialize with chat data for given chatId', () => {
-    const { chat, messages } = useChat(testChatId);
+  it('initializes with correct chat data', () => {
+    const { chat } = useChat(testId);
 
-    expect(chat.value?.id).toBe(testChatId);
-    expect(chat.value?.title).toBe(`Chat ${testChatId}`);
-    expect(messages.value).toHaveLength(2);
-    expect(messages.value[0]?.content).toBe('Hello');
-    expect(messages.value[1]?.content).toBe('Hi there!');
+    expect(chat.value).toBeDefined();
+    expect(chat.value?.id).toBe(testId);
+
+    expect(useChatsMock).toHaveBeenCalledTimes(1);
   });
 
-  it('should return undefined chat for non-existent chatId', () => {
-    const { chat, messages } = useChat('non-existent');
+  it('fetches messages when fetchMessages is called', async () => {
+    const { chat, fetchMessages } = useChat(testId);
+    await fetchMessages();
 
-    expect(chat.value).toBeUndefined();
-    expect(messages.value).toHaveLength(0);
+    expect(useFetchMock).toHaveBeenCalledTimes(1);
+    expect(useFetchMock).toHaveBeenCalledWith(
+      `/api/chats/${testId}/messages`,
+      expect.objectContaining({
+        default: expect.any(Function),
+        immediate: false,
+      }),
+      expect.any(String)
+    );
+
+    // should update chat.messages with fetched messages
+    expect(chat.value?.messages).toHaveLength(2);
+    expect(chat.value?.messages[0]?.id).toBe('test-id2');
+    expect(chat.value?.messages[1]?.id).toBe('test-id3');
   });
 
-  it('should have reactive messages computed from chat', () => {
-    const { chat, messages } = useChat(testChatId);
+  it('sendMessage posts user message and AI response, and generates title on first message', async () => {
+    const userContent = 'Hi there';
 
-    // Initially 2 messages
-    expect(messages.value).toHaveLength(2);
-
-    // Add a message directly to chat
-    chat.value!.messages.push({
-      id: '2',
-      role: 'user' as const,
-      content: 'New message',
+    // 1st call: title generation
+    mockFetch.mockResolvedValueOnce({
+      id: testId,
+      title: 'Generated Title',
+      messages: [],
       createdAt: new Date(),
       updatedAt: new Date(),
-    });
-
-    // Messages should be reactive
-    expect(messages.value).toHaveLength(3);
-    expect(messages.value[2]?.content).toBe('New message');
-  });
-
-  it('should send a user message and receive an assistant response', async () => {
-    const { messages, sendMessage } = useChat(testChatId);
-
-    const initialMessageCount = messages.value.length;
-    const testMessage = 'Test message';
-
-    await sendMessage(testMessage);
-
-    // User message should be added
-    expect(messages.value).toHaveLength(initialMessageCount + 2);
-    expect(messages.value[initialMessageCount]).toEqual({
-      id: initialMessageCount.toString(),
+    } as Chat);
+    // 2nd call: user message creation
+    mockFetch.mockResolvedValueOnce({
+      id: 'user-1',
+      content: userContent,
       role: 'user',
-      content: testMessage,
-      createdAt: expect.any(Date),
-      updatedAt: expect.any(Date),
-    });
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as ChatMessage);
+    // 3rd call: ai response generation
+    mockFetch.mockResolvedValueOnce({
+      id: 'ai-1',
+      content: 'Hello! How can I help you?',
+      role: 'assistant',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as ChatMessage);
 
-    // Assistant response should be added
-    expect(messages.value[initialMessageCount + 1]).toEqual(mockResponse);
+    const { chat, messages, sendMessage } = useChat(testId);
+    const prevUpdatedAt = chat.value?.updatedAt as Date;
+
+    await sendMessage(userContent);
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
+      `/api/chats/${testId}/title`,
+      expect.objectContaining({ method: 'POST', body: { message: userContent } })
+    );
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      `/api/chats/${testId}/messages`,
+      expect.objectContaining({ method: 'POST', body: { content: userContent, role: 'user' } })
+    );
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      3,
+      `/api/chats/${testId}/messages/generate`,
+      expect.objectContaining({ method: 'POST' })
+    );
+
+    // messages should contain user then ai message
+    expect(messages.value).toHaveLength(2);
+    expect(messages.value[0]?.id).toBe('user-1');
+    expect(messages.value[0]?.role).toBe('user');
+    expect(messages.value[1]?.id).toBe('ai-1');
+    expect(messages.value[1]?.role).toBe('assistant');
+
+    // title should be updated (since first message)
+    expect(chat.value?.title).toBe('Generated Title');
+
+    // updatedAt should change to a new Date
+    expect(chat.value?.updatedAt).not.toBe(prevUpdatedAt);
   });
 
-  it('should generate sequential IDs for messages', async () => {
-    const { messages, sendMessage } = useChat(testChatId);
+  it('sendMessage does not generate title when chat already has messages', async () => {
+    // Pre-populate chat with a message
+    useChatsMock.mockImplementationOnce(() => ({
+      chats: ref([
+        {
+          id: testId,
+          title: 'Existing Chat',
+          messages: [
+            {
+              id: 'existing',
+              content: 'Existing message',
+              role: 'user',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]),
+    }));
 
-    const initialCount = messages.value.length;
-
-    // Mock responses for each call
+    // Only two calls: create user message and generate ai response
     mockFetch
       .mockResolvedValueOnce({
-        id: (initialCount + 1).toString(),
-        role: 'assistant',
-        content: 'Response 1',
+        id: 'user-2',
+        content: 'Second message',
+        role: 'user',
         createdAt: new Date(),
         updatedAt: new Date(),
-      })
+      } as ChatMessage)
       .mockResolvedValueOnce({
-        id: (initialCount + 3).toString(),
+        id: 'ai-2',
+        content: 'AI reply',
         role: 'assistant',
-        content: 'Response 2',
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as ChatMessage);
 
-    await sendMessage('First message');
+    const { chat, messages, sendMessage } = useChat(testId);
     await sendMessage('Second message');
 
-    // Check that user message IDs are sequential
-    expect(messages.value[initialCount]?.id).toBe(initialCount.toString());
-    expect(messages.value[initialCount + 2]?.id).toBe((initialCount + 2).toString());
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      1,
+      `/api/chats/${testId}/messages`,
+      expect.objectContaining({ method: 'POST' })
+    );
+    expect(mockFetch).toHaveBeenNthCalledWith(
+      2,
+      `/api/chats/${testId}/messages/generate`,
+      expect.objectContaining({ method: 'POST' })
+    );
+    // Title should remain unchanged
+    expect(chat.value?.title).toBe('Existing Chat');
+    expect(messages.value.map((m) => m.id)).toContain('user-2');
+    expect(messages.value.map((m) => m.id)).toContain('ai-2');
   });
 
-  it('should handle API errors gracefully', async () => {
-    const { messages, sendMessage } = useChat(testChatId);
-
-    const initialMessageCount = messages.value.length;
-    const testMessage = 'Test message';
-
-    mockFetch.mockRejectedValueOnce(new Error('API Error'));
-
-    await expect(sendMessage(testMessage)).rejects.toThrow('API Error');
-
-    // User message should still be added even if API fails
-    expect(messages.value).toHaveLength(initialMessageCount + 1);
-    expect(messages.value[initialMessageCount]).toEqual({
-      id: initialMessageCount.toString(),
-      role: 'user',
-      content: testMessage,
-      createdAt: expect.any(Date),
-      updatedAt: expect.any(Date),
-    });
+  it('sendMessage is a no-op when chat is not found', async () => {
+    const missingId = 'missing';
+    const { sendMessage } = useChat(missingId);
+    await sendMessage('hello');
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it('should send all current messages to API', async () => {
-    const { messages, sendMessage } = useChat(testChatId);
-
-    const initialMessages = [...messages.value]; // Capture initial state
-    const newMessage = 'New message';
-
-    // Mock the fetch to capture what was sent, before the response modifies the array
-    let sentMessages: ChatMessage[] = [];
-    mockFetch.mockImplementationOnce(() => {
-      // Capture the current state of messages at the time of API call
-      sentMessages = [...messages.value];
-      return Promise.resolve(mockResponse);
+  it('fetchMessages is a no-op when status is not idle', async () => {
+    // override useFetchMock for this test only with a spy-able execute
+    const execSpy = vi.fn(async () => Promise.resolve());
+    useFetchMock.mockImplementationOnce(() => {
+      return {
+        data: ref<ChatMessage[]>([]),
+        execute: execSpy,
+        status: ref('pending'),
+      };
     });
 
-    await sendMessage(newMessage);
-
-    // Verify that all messages (including the new user message) were sent to API
-    const expectedMessages = [
-      ...initialMessages,
-      {
-        id: initialMessages.length.toString(),
-        role: 'user',
-        content: newMessage,
-        createdAt: expect.any(Date),
-        updatedAt: expect.any(Date),
-      },
-    ];
-
-    expect(sentMessages).toEqual(expectedMessages);
+    const { fetchMessages } = useChat(testId);
+    await fetchMessages();
+    // execute should not be called and $fetch untouched
+    expect(useFetchMock).toHaveBeenCalled();
+    expect(execSpy).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it('should not send message if chat does not exist', async () => {
-    const { sendMessage } = useChat('non-existent');
+  it('fetchMessages is a no-op when chat is not found', async () => {
+    const execSpy = vi.fn(async () => Promise.resolve());
+    // even if useChat is called, it sets up useFetch, but fetchMessages should early-return
+    useFetchMock.mockImplementationOnce(() => {
+      return {
+        data: ref<ChatMessage[]>([]),
+        execute: execSpy,
+        status: ref('idle'),
+      };
+    });
 
-    await sendMessage('Test message');
-
-    // $fetch should not be called if chat doesn't exist
+    const missingId = 'missing';
+    const { fetchMessages } = useChat(missingId);
+    await fetchMessages();
+    expect(useFetchMock).toHaveBeenCalledTimes(1);
+    expect(execSpy).not.toHaveBeenCalled();
     expect(mockFetch).not.toHaveBeenCalled();
   });
 });
