@@ -1,6 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai';
-import type { LanguageModelV1, Message } from 'ai';
-import { generateText } from 'ai';
+import { generateText, streamText, type LanguageModelV1, type Message } from 'ai';
 import { createOllama } from 'ollama-ai-provider';
 
 /** Create Ollama for local use */
@@ -50,4 +49,12 @@ export async function generateChatTitle(
   });
 
   return response.text.trim();
+}
+
+export async function streamChatResponse(model: LanguageModelV1, messages: Message[]) {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    throw new Error('Invalid messages format');
+  }
+
+  return streamText({ model, messages }).textStream;
 }
