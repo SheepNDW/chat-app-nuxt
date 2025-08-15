@@ -35,5 +35,7 @@ useHead({
 </script>
 
 <template>
-  <ChatWindow :chat :messages :typing @send-message="handleSendMessage" />
+  <div class="h-full flex flex-col">
+    <ChatWindow :typing :chat :messages @send-message="handleSendMessage" />
+  </div>
 </template>
