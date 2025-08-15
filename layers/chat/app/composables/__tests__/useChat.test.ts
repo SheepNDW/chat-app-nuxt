@@ -34,11 +34,31 @@ mockNuxtImport('useFetch', () => {
 
 const mockFetch = vi.spyOn(global, '$fetch');
 
+// Mock streaming APIs
+const mockReader = {
+  read: vi.fn(),
+};
+
+const mockStream = {
+  pipeThrough: vi.fn(() => ({
+    getReader: vi.fn(() => mockReader),
+  })),
+};
+
+global.ReadableStream = vi.fn(() => mockStream) as unknown as typeof ReadableStream;
+global.TextDecoderStream = vi.fn() as unknown as typeof TextDecoderStream;
+
 describe('useChat', () => {
   const testId = 'test-uuid';
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Reset streaming mocks
+    mockReader.read.mockReset();
+    mockStream.pipeThrough.mockReturnValue({
+      getReader: vi.fn(() => mockReader),
+    });
 
     useChatsMock.mockImplementation(() => ({
       chats: ref([
@@ -106,8 +126,74 @@ describe('useChat', () => {
     expect(chat.value?.messages[1]?.id).toBe('test-id3');
   });
 
-  it('sendMessage posts user message and AI response, and generates title on first message', async () => {
+  it('fetchMessages with refresh=true ignores existing messages', async () => {
+    const { chat, fetchMessages } = useChat(testId);
+
+    // Pre-populate with messages
+    if (chat.value) {
+      chat.value.messages = [
+        {
+          id: 'existing',
+          content: 'Existing message',
+          role: 'user',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+    }
+
+    await fetchMessages({ refresh: true });
+
+    expect(useFetchMock).toHaveBeenCalledTimes(1);
+    // should still update messages despite existing ones
+    expect(chat.value?.messages).toHaveLength(2);
+  });
+
+  it('fetchMessages skips when hasExistingMessages and refresh=false', async () => {
+    const execSpy = vi.fn(async () => Promise.resolve());
+    useFetchMock.mockImplementationOnce(() => {
+      return {
+        data: ref<ChatMessage[]>([]),
+        execute: execSpy,
+        status: ref('idle'),
+      };
+    });
+
+    const { chat, fetchMessages } = useChat(testId);
+
+    // Pre-populate with multiple messages
+    if (chat.value) {
+      chat.value.messages = [
+        {
+          id: 'msg1',
+          content: 'First message',
+          role: 'user',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'msg2',
+          content: 'Second message',
+          role: 'assistant',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+    }
+
+    await fetchMessages(); // refresh defaults to false
+
+    expect(execSpy).not.toHaveBeenCalled();
+  });
+
+  it('sendMessage adds optimistic message, streams response, and generates title on first message', async () => {
     const userContent = 'Hi there';
+
+    // Mock streaming response
+    mockReader.read
+      .mockResolvedValueOnce({ value: 'Hello! ', done: false })
+      .mockResolvedValueOnce({ value: 'How can I help you?', done: false })
+      .mockResolvedValueOnce({ value: undefined, done: true });
 
     // 1st call: title generation
     mockFetch.mockResolvedValueOnce({
@@ -125,16 +211,34 @@ describe('useChat', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     } as ChatMessage);
-    // 3rd call: ai response generation
-    mockFetch.mockResolvedValueOnce({
-      id: 'ai-1',
-      content: 'Hello! How can I help you?',
-      role: 'assistant',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as ChatMessage);
+    // 3rd call: streaming response
+    mockFetch.mockResolvedValueOnce(mockStream);
+    // 4th call: fetchMessages refresh
+    const execSpy = vi.fn(async () => Promise.resolve());
+    useFetchMock.mockImplementationOnce(() => {
+      return {
+        data: ref<ChatMessage[]>([
+          {
+            id: 'user-1',
+            content: userContent,
+            role: 'user',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          {
+            id: 'ai-1',
+            content: 'Hello! How can I help you?',
+            role: 'assistant',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ]),
+        execute: execSpy,
+        status: ref('idle'),
+      };
+    });
 
-    const { chat, messages, sendMessage } = useChat(testId);
+    const { chat, sendMessage } = useChat(testId);
     const prevUpdatedAt = chat.value?.updatedAt as Date;
 
     await sendMessage(userContent);
@@ -152,16 +256,12 @@ describe('useChat', () => {
     );
     expect(mockFetch).toHaveBeenNthCalledWith(
       3,
-      `/api/chats/${testId}/messages/generate`,
-      expect.objectContaining({ method: 'POST' })
+      `/api/chats/${testId}/messages/stream`,
+      expect.objectContaining({ method: 'POST', responseType: 'stream' })
     );
 
-    // messages should contain user then ai message
-    expect(messages.value).toHaveLength(2);
-    expect(messages.value[0]?.id).toBe('user-1');
-    expect(messages.value[0]?.role).toBe('user');
-    expect(messages.value[1]?.id).toBe('ai-1');
-    expect(messages.value[1]?.role).toBe('assistant');
+    // fetchMessages should be called with refresh: true
+    expect(execSpy).toHaveBeenCalledTimes(1);
 
     // title should be updated (since first message)
     expect(chat.value?.title).toBe('Generated Title');
@@ -192,7 +292,12 @@ describe('useChat', () => {
       ]),
     }));
 
-    // Only two calls: create user message and generate ai response
+    // Mock streaming response
+    mockReader.read
+      .mockResolvedValueOnce({ value: 'AI reply', done: false })
+      .mockResolvedValueOnce({ value: undefined, done: true });
+
+    // Only two calls: create user message and streaming response
     mockFetch
       .mockResolvedValueOnce({
         id: 'user-2',
@@ -201,15 +306,19 @@ describe('useChat', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       } as ChatMessage)
-      .mockResolvedValueOnce({
-        id: 'ai-2',
-        content: 'AI reply',
-        role: 'assistant',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as ChatMessage);
+      .mockResolvedValueOnce(mockStream);
 
-    const { chat, messages, sendMessage } = useChat(testId);
+    // Mock fetchMessages refresh
+    const execSpy = vi.fn(async () => Promise.resolve());
+    useFetchMock.mockImplementationOnce(() => {
+      return {
+        data: ref<ChatMessage[]>([]),
+        execute: execSpy,
+        status: ref('idle'),
+      };
+    });
+
+    const { chat, sendMessage } = useChat(testId);
     await sendMessage('Second message');
 
     expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -220,13 +329,13 @@ describe('useChat', () => {
     );
     expect(mockFetch).toHaveBeenNthCalledWith(
       2,
-      `/api/chats/${testId}/messages/generate`,
-      expect.objectContaining({ method: 'POST' })
+      `/api/chats/${testId}/messages/stream`,
+      expect.objectContaining({ method: 'POST', responseType: 'stream' })
     );
+
     // Title should remain unchanged
     expect(chat.value?.title).toBe('Existing Chat');
-    expect(messages.value.map((m) => m.id)).toContain('user-2');
-    expect(messages.value.map((m) => m.id)).toContain('ai-2');
+    expect(execSpy).toHaveBeenCalledTimes(1);
   });
 
   it('sendMessage is a no-op when chat is not found', async () => {
@@ -272,5 +381,100 @@ describe('useChat', () => {
     expect(useFetchMock).toHaveBeenCalledTimes(1);
     expect(execSpy).not.toHaveBeenCalled();
     expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('sendMessage handles user message creation error by removing optimistic message', async () => {
+    // First call will be for title generation (since it's first message)
+    mockFetch.mockResolvedValueOnce({
+      id: testId,
+      title: 'Generated Title',
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Chat);
+
+    // Second call will fail for user message creation
+    const messageCreationError = new Error('Failed to create message');
+    mockFetch.mockRejectedValueOnce(messageCreationError);
+
+    const { messages, sendMessage } = useChat(testId);
+
+    // The function should not throw, but handle the error internally
+    await expect(sendMessage('Test message')).resolves.toBeUndefined();
+
+    // Should not have any messages after error (optimistic message removed)
+    expect(messages.value).toHaveLength(0);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('sendMessage handles streaming error gracefully', async () => {
+    // Pre-populate chat with a message so no title generation
+    useChatsMock.mockImplementationOnce(() => ({
+      chats: ref([
+        {
+          id: testId,
+          title: 'Existing Chat',
+          messages: [
+            {
+              id: 'existing',
+              content: 'Existing message',
+              role: 'user',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]),
+    }));
+
+    // User message creation succeeds
+    mockFetch.mockResolvedValueOnce({
+      id: 'user-1',
+      content: 'Test message',
+      role: 'user',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as ChatMessage);
+
+    // Streaming fails
+    const streamingError = new Error('Streaming failed');
+    mockFetch.mockRejectedValueOnce(streamingError);
+
+    // Mock fetchMessages refresh
+    const execSpy = vi.fn(async () => Promise.resolve());
+    useFetchMock.mockImplementationOnce(() => {
+      return {
+        data: ref<ChatMessage[]>([]),
+        execute: execSpy,
+        status: ref('idle'),
+      };
+    });
+
+    const { sendMessage } = useChat(testId);
+
+    // The function should not throw, but handle the error internally
+    await expect(sendMessage('Test message')).resolves.toBeUndefined();
+
+    // Should still call fetchMessages even after streaming error
+    expect(execSpy).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('generateChatTitle throws error when API call fails', async () => {
+    const titleError = new Error('Title generation failed');
+    mockFetch.mockRejectedValueOnce(titleError);
+
+    const { sendMessage } = useChat(testId);
+
+    // Since generateChatTitle doesn't have error handling,
+    // and is called from sendMessage, the error should be handled
+    // by the sendMessage error handling logic
+    await expect(sendMessage('Test message')).resolves.toBeUndefined();
+
+    // The optimistic message should be removed due to title generation error
+    const { messages } = useChat(testId);
+    expect(messages.value).toHaveLength(0);
   });
 });
