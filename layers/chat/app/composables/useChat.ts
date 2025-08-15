@@ -23,19 +23,23 @@ export default function useChat(chatId: string) {
   async function generateChatTitle(message: string) {
     if (!chat.value) return;
 
-    const updatedChat = await $fetch<Chat>(`/api/chats/${chatId}/title`, {
-      method: 'POST',
-      body: { message },
-    });
+    try {
+      const updatedChat = await $fetch<Chat>(`/api/chats/${chatId}/title`, {
+        method: 'POST',
+        body: { message },
+      });
 
-    chat.value.title = updatedChat.title;
+      chat.value.title = updatedChat.title;
+    } catch (error) {
+      console.error('Error generating chat title:', error);
+    }
   }
 
   async function sendMessage(message: string) {
     if (!chat.value) return;
 
     if (messages.value.length === 0) {
-      generateChatTitle(message);
+      await generateChatTitle(message);
     }
 
     const optimisticUserMessage: ChatMessage = {
