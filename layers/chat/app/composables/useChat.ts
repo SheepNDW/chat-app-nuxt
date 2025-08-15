@@ -9,8 +9,8 @@ export default function useChat(chatId: string) {
     immediate: false,
   });
 
-  async function fetchMessages() {
-    if (status.value !== 'idle' || !chat.value) return;
+  async function fetchMessages({ refresh = false }: { refresh?: boolean } = {}) {
+    if ((!refresh && status.value !== 'idle') || !chat.value) return;
     await execute();
     chat.value.messages = data.value;
   }
@@ -43,11 +43,37 @@ export default function useChat(chatId: string) {
 
     messages.value.push(newMessage);
 
-    const aiResponse = await $fetch<ChatMessage>(`/api/chats/${chatId}/messages/generate`, {
-      method: 'POST',
+    messages.value.push({
+      id: `streaming-message-${Date.now()}`,
+      role: 'assistant',
+      content: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
+    const lastMessage = messages.value[messages.value.length - 1] as ChatMessage;
 
-    messages.value.push(aiResponse);
+    try {
+      const response = await $fetch<ReadableStream>(`/api/chats/${chatId}/messages/stream`, {
+        method: 'POST',
+        responseType: 'stream',
+        body: {
+          messages: messages.value,
+        },
+      });
+
+      const reader = response.pipeThrough(new TextDecoderStream()).getReader();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        lastMessage.content += value ?? '';
+      }
+    } catch (error) {
+      console.error('Error streaming chat response:', error);
+    } finally {
+      await fetchMessages({ refresh: true });
+    }
+
     chat.value.updatedAt = new Date();
   }
 
