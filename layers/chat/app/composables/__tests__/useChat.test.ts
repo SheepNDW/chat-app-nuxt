@@ -462,19 +462,53 @@ describe('useChat', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
-  it('generateChatTitle throws error when API call fails', async () => {
+  it('sendMessage handles title generation error gracefully', async () => {
     const titleError = new Error('Title generation failed');
     mockFetch.mockRejectedValueOnce(titleError);
 
-    const { sendMessage } = useChat(testId);
+    // Mock user message creation to succeed
+    mockFetch.mockResolvedValueOnce({
+      id: 'user-1',
+      content: 'Test message',
+      role: 'user',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as ChatMessage);
 
-    // Since generateChatTitle doesn't have error handling,
-    // and is called from sendMessage, the error should be handled
-    // by the sendMessage error handling logic
+    // Mock streaming response
+    mockReader.read
+      .mockResolvedValueOnce({ value: 'AI reply', done: false })
+      .mockResolvedValueOnce({ value: undefined, done: true });
+    mockFetch.mockResolvedValueOnce(mockStream);
+
+    // Mock fetchMessages refresh
+    const execSpy = vi.fn(async () => Promise.resolve());
+    useFetchMock.mockImplementationOnce(() => {
+      return {
+        data: ref<ChatMessage[]>([]),
+        execute: execSpy,
+        status: ref('idle'),
+      };
+    });
+
+    // Mock console.error to verify error logging
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { sendMessage, chat } = useChat(testId);
+
+    // Since generateChatTitle now has error handling,
+    // and is awaited in sendMessage, the error should be handled gracefully
     await expect(sendMessage('Test message')).resolves.toBeUndefined();
 
-    // The optimistic message should be removed due to title generation error
-    const { messages } = useChat(testId);
-    expect(messages.value).toHaveLength(0);
+    // Should have logged the error
+    expect(consoleSpy).toHaveBeenCalledWith('Error generating chat title:', titleError);
+
+    // Title should remain unchanged after error
+    expect(chat.value?.title).toBe('Nuxt.js project help');
+
+    // Message sending should still succeed
+    expect(execSpy).toHaveBeenCalledTimes(1);
+
+    consoleSpy.mockRestore();
   });
 });
