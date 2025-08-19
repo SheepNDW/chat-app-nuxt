@@ -40,3 +40,7 @@ export const CreateProjectSchema = z.strictObject({
 export const UpdateProjectSchema = z.strictObject({
   name: z.string().min(1),
 });
+
+export const UpdateChatSchema = z.strictObject({
+  projectId: z.uuid(),
+});
