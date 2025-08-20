@@ -5,7 +5,10 @@ export default defineEventHandler(async (event) => {
   const { success, data } = await readValidatedBody(event, ChatMessageSchema.safeParse);
 
   if (!success) {
-    return 400;
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request',
+    });
   }
 
   const { messages } = data as {
