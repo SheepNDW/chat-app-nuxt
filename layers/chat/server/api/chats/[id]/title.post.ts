@@ -8,7 +8,10 @@ export default defineEventHandler(async (event) => {
   const { success, data } = await readValidatedBody(event, UpdateChatTitleSchema.safeParse);
 
   if (!success) {
-    return 400;
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Bad Request',
+    });
   }
 
   const model = createOpenAIModel(useRuntimeConfig().openaiApiKey);
