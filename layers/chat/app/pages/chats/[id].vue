@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { NuxtError } from '#app';
+
 const route = useRoute();
 
 const {
@@ -29,6 +31,10 @@ const title = computed(() =>
   chat.value?.title ? `${chat.value.title} - ${appConfig.title}` : appConfig.title
 );
 
+async function handleError() {
+  await navigateTo('/', { replace: true });
+}
+
 useHead({
   title,
 });
@@ -36,6 +42,38 @@ useHead({
 
 <template>
   <div class="h-full flex flex-col">
-    <ChatWindow :typing :chat :messages @send-message="handleSendMessage" />
+    <NuxtErrorBoundary>
+      <ChatWindow :typing :chat :messages @send-message="handleSendMessage" />
+
+      <template #error="{ error }">
+        <UContainer class="flex justify-center items-center h-full p-4">
+          <UCard variant="soft" class="min-w-md">
+            <template #header>
+              <h1 class="text-lg font-bold">
+                Error - {{ (error as NuxtError).statusCode ?? 'Unknown' }}
+              </h1>
+            </template>
+
+            <p>
+              {{
+                (error as NuxtError)?.statusMessage ||
+                error?.message ||
+                'An unexpected error occurred.'
+              }}
+            </p>
+
+            <UButton
+              class="mt-4"
+              color="primary"
+              variant="soft"
+              icon="i-heroicons-arrow-left"
+              @click="handleError"
+            >
+              Go back home
+            </UButton>
+          </UCard>
+        </UContainer>
+      </template>
+    </NuxtErrorBoundary>
   </div>
 </template>
