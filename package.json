@@ -31,10 +31,12 @@
   "devDependencies": {
     "@nuxt/test-utils": "^3.19.1",
     "@nuxtjs/mdc": "^0.17.2",
+    "@prisma/client": "6.9.0",
     "@vue/test-utils": "^2.4.6",
     "happy-dom": "^18.0.1",
     "husky": "^9.1.7",
     "playwright-core": "^1.53.1",
+    "prisma": "6.9.0",
     "vitest": "^3.2.4"
   }
 }
