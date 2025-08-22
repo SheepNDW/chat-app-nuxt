@@ -2,9 +2,9 @@ export default function useChat(chatId: string) {
   const { chats } = useChats();
   const chat = computed(() => chats.value.find((c) => c.id === chatId));
 
-  const messages = computed<ChatMessage[]>(() => chat.value?.messages || []);
+  const messages = computed<Message[]>(() => chat.value?.messages || []);
 
-  const { data, execute, status } = useFetch<ChatMessage[]>(`/api/chats/${chatId}/messages`, {
+  const { data, execute, status } = useFetch<Message[]>(`/api/chats/${chatId}/messages`, {
     default: () => [],
     immediate: false,
   });
@@ -42,7 +42,7 @@ export default function useChat(chatId: string) {
       await generateChatTitle(message);
     }
 
-    const optimisticUserMessage: ChatMessage = {
+    const optimisticUserMessage: Message = {
       id: `optimistic-message-${Date.now()}`,
       role: 'user',
       content: message,
@@ -53,7 +53,7 @@ export default function useChat(chatId: string) {
     const userMessageIndex = messages.value.length - 1;
 
     try {
-      const newMessage = await $fetch<ChatMessage>(`/api/chats/${chatId}/messages`, {
+      const newMessage = await $fetch<Message>(`/api/chats/${chatId}/messages`, {
         method: 'POST',
         body: {
           content: message,
@@ -75,7 +75,7 @@ export default function useChat(chatId: string) {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    const lastMessage = messages.value[messages.value.length - 1] as ChatMessage;
+    const lastMessage = messages.value[messages.value.length - 1] as Message;
 
     try {
       const response = await $fetch<ReadableStream>(`/api/chats/${chatId}/messages/stream`, {
@@ -108,7 +108,7 @@ export default function useChat(chatId: string) {
     const originalProjectId = chat.value.projectId;
 
     // Optimistically update the chat
-    chat.value.projectId = projectId || undefined;
+    chat.value.projectId = projectId || null;
 
     try {
       const updatedChat = await $fetch<Chat>(`/api/chats/${chatId}`, {
