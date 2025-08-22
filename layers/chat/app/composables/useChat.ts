@@ -24,7 +24,7 @@ export default function useChat(chatId: string) {
     if (!chat.value) return;
 
     try {
-      const updatedChat = await $fetch<Chat>(`/api/chats/${chatId}/title`, {
+      const updatedChat = await $fetch<ChatWithMessages>(`/api/chats/${chatId}/title`, {
         method: 'POST',
         body: { message },
       });
@@ -46,6 +46,7 @@ export default function useChat(chatId: string) {
       id: `optimistic-message-${Date.now()}`,
       role: 'user',
       content: message,
+      chatId: chatId,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -72,6 +73,7 @@ export default function useChat(chatId: string) {
       id: `streaming-message-${Date.now()}`,
       role: 'assistant',
       content: '',
+      chatId: chatId,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -111,7 +113,7 @@ export default function useChat(chatId: string) {
     chat.value.projectId = projectId || null;
 
     try {
-      const updatedChat = await $fetch<Chat>(`/api/chats/${chatId}`, {
+      const updatedChat = await $fetch<ChatWithMessages>(`/api/chats/${chatId}`, {
         method: 'PUT',
         body: {
           projectId,

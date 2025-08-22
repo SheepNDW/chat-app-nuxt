@@ -1,6 +1,6 @@
 export default function useChats() {
-  const chats = useState<Chat[]>('chats', () => []);
-  const { data, execute, status } = useFetch<Chat[]>('/api/chats', {
+  const chats = useState<ChatWithMessages[]>('chats', () => []);
+  const { data, execute, status } = useFetch<ChatWithMessages[]>('/api/chats', {
     immediate: false,
     default: () => [],
   });
@@ -34,7 +34,7 @@ export default function useChats() {
   }
 
   async function createChat(options: { projectId?: string; title?: string } = {}) {
-    const newChat = await $fetch<Chat>('/api/chats', {
+    const newChat = await $fetch<ChatWithMessages>('/api/chats', {
       method: 'POST',
       body: {
         title: options.title,

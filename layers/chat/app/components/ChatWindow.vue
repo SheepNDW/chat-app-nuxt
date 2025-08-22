@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { messages, chat } = defineProps<{
   messages: Message[];
-  chat: Chat;
+  chat: ChatWithMessages;
   typing: boolean;
 }>();
 
