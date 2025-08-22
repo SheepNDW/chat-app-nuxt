@@ -51,7 +51,7 @@ async function handleCreateProject() {
   await createChatAndNavigate({ projectId: newProject.id });
 }
 
-const chatsWithoutProject = computed(() => chats.value.filter((c) => c.projectId === undefined));
+const chatsWithoutProject = computed(() => chats.value.filter((c) => c.projectId === null));
 
 function useFilteredChats(startDays: number, endDays?: number) {
   return computed(() => {
