@@ -19,7 +19,7 @@ export default function useChats() {
     await Promise.all(
       recentChats.map(async (chat) => {
         try {
-          const messages = await $fetch<ChatMessage[]>(`/api/chats/${chat.id}/messages`);
+          const messages = await $fetch<Message[]>(`/api/chats/${chat.id}/messages`);
 
           const targetChat = chats.value.find((c) => c.id === chat.id);
 

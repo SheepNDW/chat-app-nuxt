@@ -20,7 +20,7 @@ const { useFetchMock } = vi.hoisted(() => {
   return {
     useFetchMock: vi.fn(() => {
       return {
-        data: ref<ChatMessage[]>([]),
+        data: ref<Message[]>([]),
         execute: vi.fn(async () => Promise.resolve()),
         status: ref('idle'),
       };
@@ -74,7 +74,7 @@ describe('useChat', () => {
 
     useFetchMock.mockImplementation(() => {
       return {
-        data: ref<ChatMessage[]>([
+        data: ref<Message[]>([
           {
             id: 'test-id2',
             content: 'Hello, can you help me with my Nuxt.js project?',
@@ -153,7 +153,7 @@ describe('useChat', () => {
     const execSpy = vi.fn(async () => Promise.resolve());
     useFetchMock.mockImplementationOnce(() => {
       return {
-        data: ref<ChatMessage[]>([]),
+        data: ref<Message[]>([]),
         execute: execSpy,
         status: ref('idle'),
       };
@@ -210,14 +210,14 @@ describe('useChat', () => {
       role: 'user',
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as ChatMessage);
+    } as Message);
     // 3rd call: streaming response
     mockFetch.mockResolvedValueOnce(mockStream);
     // 4th call: fetchMessages refresh
     const execSpy = vi.fn(async () => Promise.resolve());
     useFetchMock.mockImplementationOnce(() => {
       return {
-        data: ref<ChatMessage[]>([
+        data: ref<Message[]>([
           {
             id: 'user-1',
             content: userContent,
@@ -305,14 +305,14 @@ describe('useChat', () => {
         role: 'user',
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as ChatMessage)
+      } as Message)
       .mockResolvedValueOnce(mockStream);
 
     // Mock fetchMessages refresh
     const execSpy = vi.fn(async () => Promise.resolve());
     useFetchMock.mockImplementationOnce(() => {
       return {
-        data: ref<ChatMessage[]>([]),
+        data: ref<Message[]>([]),
         execute: execSpy,
         status: ref('idle'),
       };
@@ -350,7 +350,7 @@ describe('useChat', () => {
     const execSpy = vi.fn(async () => Promise.resolve());
     useFetchMock.mockImplementationOnce(() => {
       return {
-        data: ref<ChatMessage[]>([]),
+        data: ref<Message[]>([]),
         execute: execSpy,
         status: ref('pending'),
       };
@@ -369,7 +369,7 @@ describe('useChat', () => {
     // even if useChat is called, it sets up useFetch, but fetchMessages should early-return
     useFetchMock.mockImplementationOnce(() => {
       return {
-        data: ref<ChatMessage[]>([]),
+        data: ref<Message[]>([]),
         execute: execSpy,
         status: ref('idle'),
       };
@@ -436,7 +436,7 @@ describe('useChat', () => {
       role: 'user',
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as ChatMessage);
+    } as Message);
 
     // Streaming fails
     const streamingError = new Error('Streaming failed');
@@ -446,7 +446,7 @@ describe('useChat', () => {
     const execSpy = vi.fn(async () => Promise.resolve());
     useFetchMock.mockImplementationOnce(() => {
       return {
-        data: ref<ChatMessage[]>([]),
+        data: ref<Message[]>([]),
         execute: execSpy,
         status: ref('idle'),
       };
@@ -473,7 +473,7 @@ describe('useChat', () => {
       role: 'user',
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as ChatMessage);
+    } as Message);
 
     // Mock streaming response
     mockReader.read
@@ -485,7 +485,7 @@ describe('useChat', () => {
     const execSpy = vi.fn(async () => Promise.resolve());
     useFetchMock.mockImplementationOnce(() => {
       return {
-        data: ref<ChatMessage[]>([]),
+        data: ref<Message[]>([]),
         execute: execSpy,
         status: ref('idle'),
       };
