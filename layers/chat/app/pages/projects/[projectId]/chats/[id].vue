@@ -15,7 +15,7 @@ if (!chatFromChats.value) {
   });
 }
 
-const chat = computed(() => chatFromChats.value as Chat);
+const chat = computed(() => chatFromChats.value as ChatWithMessages);
 const typing = ref(false);
 
 const handleSendMessage = async (message: string) => {

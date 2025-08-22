@@ -1,12 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ChatWithMessages, Message } from '#layers/chat/shared/types/types';
 import { mockNuxtImport } from '@nuxt/test-utils/runtime';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
 
 const { useChatsMock } = vi.hoisted(() => {
   return {
     useChatsMock: vi.fn(() => {
       return {
-        chats: ref<Chat[]>([]),
+        chats: ref<ChatWithMessages[]>([]),
       };
     }),
   };
@@ -65,7 +66,10 @@ describe('useChat', () => {
         {
           id: testId,
           title: 'Nuxt.js project help',
+          userId: 'test-user-1',
+          projectId: null,
           messages: [],
+          project: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -79,6 +83,7 @@ describe('useChat', () => {
             id: 'test-id2',
             content: 'Hello, can you help me with my Nuxt.js project?',
             role: 'user',
+            chatId: testId,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -87,6 +92,7 @@ describe('useChat', () => {
             content:
               "Of course! I'd be happy to help with your Nuxt.js project. What specific questions or issues do you have?",
             role: 'assistant',
+            chatId: testId,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -136,6 +142,7 @@ describe('useChat', () => {
           id: 'existing',
           content: 'Existing message',
           role: 'user',
+          chatId: testId,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -168,6 +175,7 @@ describe('useChat', () => {
           id: 'msg1',
           content: 'First message',
           role: 'user',
+          chatId: testId,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -175,6 +183,7 @@ describe('useChat', () => {
           id: 'msg2',
           content: 'Second message',
           role: 'assistant',
+          chatId: testId,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -199,10 +208,13 @@ describe('useChat', () => {
     mockFetch.mockResolvedValueOnce({
       id: testId,
       title: 'Generated Title',
+      userId: 'test-user-1',
+      projectId: null,
       messages: [],
+      project: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as Chat);
+    } as ChatWithMessages);
     // 2nd call: user message creation
     mockFetch.mockResolvedValueOnce({
       id: 'user-1',
@@ -222,6 +234,7 @@ describe('useChat', () => {
             id: 'user-1',
             content: userContent,
             role: 'user',
+            chatId: testId,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -229,6 +242,7 @@ describe('useChat', () => {
             id: 'ai-1',
             content: 'Hello! How can I help you?',
             role: 'assistant',
+            chatId: testId,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -277,15 +291,19 @@ describe('useChat', () => {
         {
           id: testId,
           title: 'Existing Chat',
+          userId: 'test-user-1',
+          projectId: null,
           messages: [
             {
               id: 'existing',
               content: 'Existing message',
               role: 'user',
+              chatId: testId,
               createdAt: new Date(),
               updatedAt: new Date(),
             },
           ],
+          project: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -388,10 +406,13 @@ describe('useChat', () => {
     mockFetch.mockResolvedValueOnce({
       id: testId,
       title: 'Generated Title',
+      userId: 'test-user-1',
+      projectId: null,
       messages: [],
+      project: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as Chat);
+    } as ChatWithMessages);
 
     // Second call will fail for user message creation
     const messageCreationError = new Error('Failed to create message');
@@ -414,15 +435,19 @@ describe('useChat', () => {
         {
           id: testId,
           title: 'Existing Chat',
+          userId: 'test-user-1',
+          projectId: null,
           messages: [
             {
               id: 'existing',
               content: 'Existing message',
               role: 'user',
+              chatId: testId,
               createdAt: new Date(),
               updatedAt: new Date(),
             },
           ],
+          project: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
