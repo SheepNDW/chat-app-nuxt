@@ -2,6 +2,7 @@ import type { ChatWithMessages, Message } from '#layers/chat/shared/types/types'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ref } from 'vue';
+import { createMockChat, getDefaultTestMessages } from './utils';
 
 const { useChatsMock } = vi.hoisted(() => {
   return {
@@ -62,41 +63,12 @@ describe('useChat', () => {
     });
 
     useChatsMock.mockImplementation(() => ({
-      chats: ref([
-        {
-          id: testId,
-          title: 'Nuxt.js project help',
-          userId: 'test-user-1',
-          projectId: null,
-          messages: [],
-          project: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ]),
+      chats: ref([createMockChat()]),
     }));
 
     useFetchMock.mockImplementation(() => {
       return {
-        data: ref<Message[]>([
-          {
-            id: 'test-id2',
-            content: 'Hello, can you help me with my Nuxt.js project?',
-            role: 'user',
-            chatId: testId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-          {
-            id: 'test-id3',
-            content:
-              "Of course! I'd be happy to help with your Nuxt.js project. What specific questions or issues do you have?",
-            role: 'assistant',
-            chatId: testId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        ]),
+        data: ref<Message[]>(getDefaultTestMessages(testId)),
         execute: vi.fn(async () => Promise.resolve()),
         status: ref('idle'),
       };
@@ -214,7 +186,7 @@ describe('useChat', () => {
       project: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as ChatWithMessages);
+    });
     // 2nd call: user message creation
     mockFetch.mockResolvedValueOnce({
       id: 'user-1',
