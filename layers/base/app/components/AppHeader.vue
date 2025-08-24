@@ -26,7 +26,7 @@ async function handleClickChat() {
       {{ appConfig.title }}
     </div>
     <div class="header-right">
-      <!-- Nothing to see here! -->
+      <ProfileMenu />
     </div>
   </header>
 </template>
