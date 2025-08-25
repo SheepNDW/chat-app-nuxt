@@ -7,6 +7,7 @@ export default function useChat(chatId: string) {
   const { data, execute, status } = useFetch<Message[]>(`/api/chats/${chatId}/messages`, {
     default: () => [],
     immediate: false,
+    headers: useRequestHeaders(['cookie']),
   });
 
   async function fetchMessages({ refresh = false }: { refresh?: boolean } = {}) {
@@ -26,6 +27,7 @@ export default function useChat(chatId: string) {
     try {
       const updatedChat = await $fetch<ChatWithMessages>(`/api/chats/${chatId}/title`, {
         method: 'POST',
+        headers: useRequestHeaders(['cookie']),
         body: { message },
       });
 
@@ -56,6 +58,7 @@ export default function useChat(chatId: string) {
     try {
       const newMessage = await $fetch<Message>(`/api/chats/${chatId}/messages`, {
         method: 'POST',
+        headers: useRequestHeaders(['cookie']),
         body: {
           content: message,
           role: 'user',
@@ -83,6 +86,7 @@ export default function useChat(chatId: string) {
       const response = await $fetch<ReadableStream>(`/api/chats/${chatId}/messages/stream`, {
         method: 'POST',
         responseType: 'stream',
+        headers: useRequestHeaders(['cookie']),
         body: {
           messages: messages.value,
         },
@@ -115,6 +119,7 @@ export default function useChat(chatId: string) {
     try {
       const updatedChat = await $fetch<ChatWithMessages>(`/api/chats/${chatId}`, {
         method: 'PUT',
+        headers: useRequestHeaders(['cookie']),
         body: {
           projectId,
         },
