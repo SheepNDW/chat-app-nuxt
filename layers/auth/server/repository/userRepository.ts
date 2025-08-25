@@ -1,3 +1,5 @@
+import { seedDemoDataForUser } from './seedRepository';
+
 export async function findUserByProviderId(providerId: string) {
   return await prisma.user.findUnique({
     where: { providerId },
@@ -24,6 +26,12 @@ export async function findOrCreateUser(githubUser: GitHubUser) {
   if (!user) {
     // Create new user if not found
     user = await createUserFromGitHub(githubUser);
+
+    try {
+      await seedDemoDataForUser(user.id);
+    } catch (error) {
+      console.error('Could not seed demo data for user:', error);
+    }
   }
 
   return user;

@@ -13,9 +13,6 @@
     "prepare": "husky",
     "test": "vitest"
   },
-  "prisma": {
-    "seed": "pnpm dlx tsx prisma/seed.ts"
-  },
   "dependencies": {
     "@ai-sdk/openai": "1.2.0",
     "@nuxt/eslint": "1.3.1",
