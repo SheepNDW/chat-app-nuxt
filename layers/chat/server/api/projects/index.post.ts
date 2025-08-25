@@ -2,6 +2,8 @@ import { createProject } from '../../repository/projectRepository';
 import { CreateProjectSchema } from '../../schemas';
 
 export default defineEventHandler(async (event) => {
+  const userId = await getAuthenticatedUserId(event);
+
   const { success, data } = await readValidatedBody(event, CreateProjectSchema.safeParse);
 
   if (!success) {
@@ -11,5 +13,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  return createProject(data);
+  return createProject({
+    ...data,
+    userId,
+  });
 });

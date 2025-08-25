@@ -1,5 +1,7 @@
-import { getAllProjects } from '../../repository/projectRepository';
+import { getAllProjectsByUser } from '../../repository/projectRepository';
 
-export default defineEventHandler(async (_event) => {
-  return getAllProjects();
+export default defineEventHandler(async (event) => {
+  const userId = await getAuthenticatedUserId(event);
+
+  return getAllProjectsByUser(userId);
 });

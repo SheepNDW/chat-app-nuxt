@@ -19,6 +19,7 @@ export default function useProject(projectId: string) {
     try {
       const response = await $fetch<Project>(`/api/projects/${projectId}`, {
         method: 'PUT',
+        headers: useRequestHeaders(['cookie']),
         body: { ...updatedProject },
       });
 
