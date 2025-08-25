@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { NuxtError } from '#app';
 
+definePageMeta({
+  middleware: 'auth',
+});
+
 const route = useRoute();
 
 const {
