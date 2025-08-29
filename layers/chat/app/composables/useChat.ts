@@ -41,7 +41,7 @@ export default function useChat(chatId: string) {
     if (!chat.value) return;
 
     if (messages.value.length === 0) {
-      await generateChatTitle(message);
+      generateChatTitle(message);
     }
 
     const optimisticUserMessage: Message = {
